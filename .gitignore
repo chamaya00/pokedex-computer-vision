@@ -1,0 +1,43 @@
+# Data
+data/
+!data/.gitkeep
+*.zip
+
+# Models
+models/
+!models/.gitkeep
+*.keras
+*.h5
+*.onnx
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.egg-info/
+.eggs/
+*.egg
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Kaggle
+kaggle.json
+
+# Logs
+logs/
+*.log
