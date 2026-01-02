@@ -8,9 +8,16 @@ This script:
 4. Generates class labels JSON
 
 Usage:
-    python scripts/prepare_data.py
+    python scripts/prepare_data.py [--source official|kaggle|augmented]
+
+Options:
+    --source: Which dataset to use
+        - kaggle: Original Kaggle dataset (default)
+        - official: Official sprites from PokeAPI
+        - augmented: Augmented official sprites (recommended for training)
 """
 
+import argparse
 import json
 import shutil
 import sys
@@ -19,16 +26,35 @@ from collections import defaultdict
 import random
 
 
-def find_pokemon_directory(data_dir: Path) -> Path:
-    """Find the directory containing Pokemon class folders."""
+def find_pokemon_directory(data_dir: Path, source: str = "kaggle") -> Path:
+    """
+    Find the directory containing Pokemon class folders.
 
+    Args:
+        data_dir: Base data directory
+        source: Dataset source ('kaggle', 'official', or 'augmented')
+
+    Returns:
+        Path to the Pokemon images directory
+    """
+    # Check for specific source directories first
+    if source == "official":
+        official_dir = data_dir / "pokemon_official"
+        if official_dir.exists():
+            return official_dir
+    elif source == "augmented":
+        augmented_dir = data_dir / "pokemon_augmented"
+        if augmented_dir.exists():
+            return augmented_dir
+
+    # Fall back to auto-detection for kaggle or if specific dir not found
     for item in data_dir.rglob("*"):
         if item.is_dir():
             subdirs = [d for d in item.iterdir() if d.is_dir()]
             if len(subdirs) > 100:
                 return item
 
-    raise FileNotFoundError("Could not find Pokemon image directory")
+    raise FileNotFoundError(f"Could not find Pokemon image directory for source '{source}'")
 
 
 def split_dataset(
@@ -128,12 +154,38 @@ if __name__ == "__main__":
 
     from src.config import DATA_DIR, VALIDATION_SPLIT, TEST_SPLIT
 
+    # Parse arguments
+    parser = argparse.ArgumentParser(description="Prepare Pokemon dataset for training")
+    parser.add_argument(
+        "--source",
+        choices=["kaggle", "official", "augmented"],
+        default="kaggle",
+        help="Dataset source: kaggle (default), official (PokeAPI), or augmented"
+    )
+    parser.add_argument(
+        "--output-suffix",
+        type=str,
+        default="",
+        help="Suffix for output directory (e.g., 'split_official')"
+    )
+    args = parser.parse_args()
+
     # Find source directory
-    source_dir = find_pokemon_directory(DATA_DIR)
+    source_dir = find_pokemon_directory(DATA_DIR, source=args.source)
+    print(f"Using {args.source} dataset")
     print(f"Found Pokemon images at: {source_dir}")
 
+    # Determine output directory
+    if args.output_suffix:
+        output_dir = DATA_DIR / f"split_{args.output_suffix}"
+    elif args.source != "kaggle":
+        output_dir = DATA_DIR / f"split_{args.source}"
+    else:
+        output_dir = DATA_DIR / "split"
+
+    print(f"Output directory: {output_dir}")
+
     # Split dataset
-    output_dir = DATA_DIR / "split"
     split_dataset(
         source_dir=source_dir,
         output_dir=output_dir,
